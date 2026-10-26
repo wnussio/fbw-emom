@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11161a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>FBW + EMOM</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Wersja na telefon: tylko wariant FBW + EMOM, zasady, dieta i atlas ćwiczeń. Działa offline (czcionki mają systemowe zamienniki). */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --fg: #182024;
+  --muted: #5a6670;
+  --line: #d6dddd;
+  --accent: #1d55c9;
+  --accent-soft: #e3ebfb;
+  --cardio: #b4441a;
+  --cardio-soft: #f9e6dc;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d6;
+  --ok: #1f7a4d;
+  --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161a; --surface: #182026; --fg: #e6ecee; --muted: #9aa7b0; --line: #2b363e;
+    --accent: #7ea6ff; --accent-soft: #1d2a45; --cardio: #f08a5d; --cardio-soft: #3a2219;
+    --warn: #e9bb5a; --warn-soft: #33290f; --ok: #5fcf96; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161a; --surface: #182026; --fg: #e6ecee; --muted: #9aa7b0; --line: #2b363e;
+  --accent: #7ea6ff; --accent-soft: #1d2a45; --cardio: #f08a5d; --cardio-soft: #3a2219;
+  --warn: #e9bb5a; --warn-soft: #33290f; --ok: #5fcf96; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--f-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: 96px;
+}
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3, h4 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(1.9rem, 8vw, 2.6rem); font-weight: 800; font-stretch: 78%; letter-spacing: -0.01em; }
+h2 { font-size: 1.5rem; font-weight: 750; font-stretch: 82%; }
+h3 { font-size: 1.12rem; font-weight: 700; font-stretch: 90%; }
+h4 { font-size: 0.95rem; font-weight: 700; font-stretch: 90%; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+.eyebrow { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: flex; flex-direction: column; gap: 10px; }
+.lead { color: var(--muted); }
+.profile { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--f-mono); font-size: 0.72rem; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); white-space: nowrap; }
+.chip.w { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+
+nav.tabs { position: sticky; top: 0; z-index: 5; background: var(--bg); padding-block: 8px; border-bottom: 1px solid var(--line); margin-inline: -4px; padding-inline: 4px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.tabrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.tabrow button {
+  font-family: var(--f-display); font-stretch: 85%; font-weight: 650; font-size: 0.95rem;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  padding: 9px 4px; border-radius: 8px; cursor: pointer; min-width: 0;
+}
+.tabrow button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+section.panel { display: flex; flex-direction: column; gap: 18px; }
+section.panel[hidden] { display: none; }
+.vhead { display: flex; flex-direction: column; gap: 8px; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fact b { font-family: var(--f-display); font-stretch: 85%; font-size: 1.05rem; }
+.fact span { font-size: 0.82rem; color: var(--muted); }
+
+.jump { display: flex; flex-wrap: wrap; gap: 6px; }
+.jump button { font: inherit; font-size: 0.88rem; line-height: 1.25; text-align: left; border: 0; border-radius: 6px; padding: 7px 10px; background: var(--accent-soft); color: var(--fg); cursor: pointer; }
+.jump button.c { background: var(--cardio-soft); }
+.jump button b { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); margin-right: 6px; font-weight: 500; }
+
+.session { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; scroll-margin-top: 70px; }
+.shead { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px 10px; border-left: 4px solid var(--accent); }
+.session.c .shead { border-left-color: var(--cardio); }
+.shead .tag { font-family: var(--f-mono); font-size: 0.72rem; color: var(--muted); }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+th:first-child, td:first-child { padding-left: 14px; }
+th:last-child, td:last-child { padding-right: 14px; }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+td.sr { font-family: var(--f-mono); font-size: 0.82rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.st { font-size: 0.82rem; color: var(--muted); }
+td small { display: block; color: var(--muted); font-size: 0.8rem; line-height: 1.35; margin-top: 2px; }
+.sbody { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+.sbody ul, .box ul, .ex ul, .ex ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.sbody .tbl { margin-inline: -14px; }
+.fin { margin: 0 10px 12px; padding: 10px 12px; border-radius: 8px; background: var(--cardio-soft); font-size: 0.92rem; }
+.fin > b { color: var(--cardio); }
+.fin .tbl { margin-top: 8px; }
+.fin table { font-size: 0.88rem; }
+.fin th, .fin td { padding: 6px 6px; }
+.fin td.sr { color: var(--cardio); }
+
+.exl {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; text-align: left; cursor: pointer;
+  text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--accent); text-underline-offset: 3px;
+}
+.exl::after { content: "?"; display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 5px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-family: var(--f-mono); font-size: 0.65rem; vertical-align: 2px; text-decoration: none; }
+
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.box.w { background: var(--warn-soft); border-color: transparent; }
+.box.w h3 { color: var(--warn); }
+.box .tbl { margin-inline: -14px; }
+
+.tracker { overflow-x: auto; margin-inline: -14px; }
+.tracker table { font-size: 0.85rem; }
+.tracker th, .tracker td { padding: 6px 4px; text-align: center; }
+.tracker td:first-child, .tracker th:first-child { text-align: left; font-family: var(--f-mono); white-space: nowrap; padding-left: 14px; }
+.tracker input { width: 24px; height: 24px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.tracker tr.deload td:first-child { color: var(--warn); }
+.tmeta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tmeta button, .confirm button { font: inherit; font-size: 0.85rem; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.progress { font-family: var(--f-mono); font-size: 0.85rem; color: var(--ok); }
+.confirm { font-size: 0.85rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.confirm button.yes { color: var(--cardio); border-color: var(--cardio); }
+
+/* Atlas ćwiczeń */
+.search { width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+.exgroup { display: flex; flex-direction: column; gap: 8px; }
+.exgroup[hidden] { display: none; }
+.exgroup > h3 { padding: 4px 2px 0; }
+details.ex { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; scroll-margin-top: 70px; }
+details.ex[hidden] { display: none; }
+details.ex > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+details.ex > summary::-webkit-details-marker { display: none; }
+details.ex > summary::after { content: "+"; font-family: var(--f-mono); color: var(--muted); font-size: 1.1rem; flex: 0 0 auto; }
+details.ex[open] > summary::after { content: "–"; }
+details.ex[open] { border-color: var(--accent); }
+details.ex.flash { box-shadow: 0 0 0 3px var(--accent-soft); }
+.ex .sname { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ex .sname b { font-family: var(--f-display); font-stretch: 88%; font-size: 1.05rem; line-height: 1.2; }
+.uses { display: flex; flex-wrap: wrap; gap: 4px; }
+.uses span { font-family: var(--f-mono); font-size: 0.66rem; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.uses span.c { background: var(--cardio-soft); color: var(--cardio); }
+.exbody { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem; }
+.exbody .meta { font-family: var(--f-mono); font-size: 0.78rem; color: var(--muted); }
+.exbody .bad { color: var(--cardio); }
+.exbody .inj { background: var(--warn-soft); color: var(--fg); border-radius: 8px; padding: 8px 10px; font-size: 0.9rem; }
+.exbody .inj b { color: var(--warn); }
+
+.backbtn {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 20; font: inherit; font-family: var(--f-display); font-stretch: 88%; font-weight: 700; font-size: 1rem;
+  padding: 12px 20px; border-radius: 999px; border: 0; background: var(--accent); color: var(--surface);
+  box-shadow: 0 6px 20px rgba(0,0,0,.25); cursor: pointer;
+}
+.backbtn[hidden] { display: none; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+footer { color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Zima 2026/27 · 10 tygodni · w domu</span>
+    <h1>FBW + EMOM</h1>
+    <p class="lead">3 treningi całego ciała z 8-minutowym EMOM-em na koniec + tabata + bieg. Dni dowolne, kolejność sesji stała.</p>
+    <div class="profile">
+      <span class="chip">hantle do ~24 kg</span><span class="chip">uchwyty · gumy · gripper</span>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Sekcje">
+    <div class="tabrow" role="tablist" id="tabs"></div>
+  </nav>
+
+  <main id="main"></main>
+
+  <footer>Odhaczone sesje zapisują się tylko w tej przeglądarce na tym telefonie.</footer>
+</div>
+
+<button type="button" class="backbtn" id="back" hidden>← Wróć do treningu</button>
+
+<script>
+/* n: nazwa · g: grupa · note: krótka wskazówka do tabeli · w: ciężar startowy
+   how: kroki · cues: na co uważać · bad: typowe błędy · inj: dodatkowa uwaga */
+const GROUPS = ["Nogi i pośladki", "Łydki", "Klatka, barki, triceps", "Przyciąganie i biceps", "Brzuch", "EMOM i tabata", "Chwyt (dodatek)"];
+
+const EX = {
+  goblet: { n: "Przysiad goblet", g: 0, note: "hantla pionowo przy klatce, 3 s w dół", w: "16–20 kg",
+    how: ["Stopy trochę szerzej niż biodra, palce lekko na zewnątrz.", "Hantla pionowo, trzymasz ją oburącz za górny talerz, przy mostku. Łokcie w dół.", "Wdech i schodzisz w 3 s, jakbyś siadał między piętami. Kolana idą w stronę palców.", "Schodzisz, aż udo będzie co najmniej równoległe do podłogi.", "Wydech, odpychasz podłogę całą stopą i wstajesz."],
+    cues: ["Pięty cały czas na podłodze.", "Klatka wysoko, wzrok przed siebie.", "Łokcie mogą na dole muskać kolana od środka."],
+    bad: ["Kolana uciekają do środka.", "Odrywanie pięt."],
+    inj: "" },
+  bulg: { n: "Przysiad bułgarski", g: 0, note: "tylna stopa na krześle, tułów lekko pochylony w przód", w: "2× 8–10 kg",
+    how: ["Stań tyłem do krzesła lub kanapy, ok. 2 stopy przed nim. Grzbiet tylnej stopy kładziesz na siedzisku.", "Hantle w opuszczonych rękach.", "Opuszczasz się pionowo w dół, aż tylne kolano prawie dotknie podłogi. Tułów lekko pochylony w przód.", "Wypychasz się przednią nogą, całą stopą.", "Wszystkie powtórzenia jedną nogą, potem druga."],
+    cues: ["Pracuje przednia noga, tylna jest tylko do równowagi.", "Przednie kolano idzie nad palce, nie do środka.", "Większy pochył tułowia = więcej pośladka."],
+    bad: ["Stopa za blisko krzesła: pięta się odrywa, kolano mocno wyjeżdża.", "Odbijanie się tylną nogą.", "Za szybki ruch w dół."],
+    inj: "" },
+  lunge: { n: "Wykrok w tył", g: 0, note: "krok do tyłu, kolano nad stopą", w: "2× 8–12 kg",
+    how: ["Stań prosto, hantle w opuszczonych rękach.", "Zrób duży krok jedną nogą do tyłu i opuść tylne kolano prawie do podłogi.", "Przednie kolano zostaje nad stopą, golenie mniej więcej pionowo.", "Odpychasz się przednią nogą i wracasz do stania.", "Robisz 10 na jedną stronę, potem 10 na drugą (albo naprzemiennie)."],
+    cues: ["Ciężar na przedniej pięcie i środku stopy.", "Tułów pionowo albo lekko w przód.", "Stopy na szerokość bioder, nie na jednej linii (łatwiej o równowagę)."],
+    bad: ["Za krótki krok, kolano daleko przed palcami.", "Uderzanie kolanem o podłogę.", "Kolano przedniej nogi wpada do środka."],
+    inj: "Wykrok w tył jest celowo zamiast wykroku w przód: mniejsze hamowanie na przedniej nodze." },
+  thrust: { n: "Hip thrust", g: 0, note: "łopatki o kanapę, hantla na biodrach, 1 s pauzy u góry", w: "20–24 kg",
+    how: ["Usiądź na podłodze tyłem do kanapy. Dolny brzeg łopatek opierasz o krawędź siedziska.", "Hantla poziomo na zgięciu bioder (podłóż złożony ręcznik), przytrzymujesz ją rękami.", "Stopy na szerokość bioder, tak daleko, żeby u góry goleń była pionowo.", "Broda lekko przyciągnięta. Wypychasz biodra w górę przez pięty, aż tułów i uda tworzą prostą linię.", "1 s pauzy z mocno spiętymi pośladkami, potem kontrolowanie w dół."],
+    cues: ["Żebra w dół, miednica lekko podwinięta na górze.", "Wzrok przed siebie, nie w sufit.", "Czujesz pracę pośladków."],
+    bad: ["Pchanie palcami zamiast piętami.", "Stopy za daleko: pracuje głównie tył uda."],
+    inj: "" },
+  bridge1: { n: "Most biodrowy jednonóż", g: 0, note: "na podłodze, 2 s pauzy u góry", w: "ciało → hantla",
+    how: ["Połóż się na plecach. Jedna stopa na podłodze, blisko pośladka. Druga noga uniesiona (zgięta przy klatce albo prosta w górę).", "Ręce wzdłuż ciała, dłonie na podłodze.", "Wypychasz biodra w górę piętą nogi podporowej.", "2 s pauzy na górze, biodra równo, poziomo.", "Powoli w dół, prawie dotykasz podłogi i od nowa."],
+    cues: ["Obie strony miednicy na tej samej wysokości.", "Wydech przy unoszeniu."],
+    bad: ["Opadanie jednego biodra."],
+    inj: "Progres: gdy 15 powtórzeń jest łatwe, połóż hantlę na biodrze po stronie nogi pracującej." },
+  calf1: { n: "Wspięcia na palce jednonóż", g: 1, note: "na stopniu: 1 s w górę, 3 s w dół", w: "ciało → hantla",
+    how: ["Stań przednią częścią stopy na krawędzi schodka lub progu, pięta w powietrzu. Ręka na ścianie dla równowagi.", "Druga noga zgięta, nie dotyka podłogi.", "1 s w górę, na maksymalne palce. Krótka pauza.", "3 s w dół, aż pięta zejdzie poniżej krawędzi (rozciągnięcie łydki).", "Wszystkie powtórzenia jedną nogą, potem druga."],
+    cues: ["Kolano proste, ale nie zablokowane.", "Ciężar nad dużym i drugim palcem, nie na małym.", "Ściana tylko do równowagi, nie podciągasz się ręką."],
+    bad: ["Szybkie odbijanie się na dole.", "Niepełny zakres w górę."],
+    inj: "" },
+  calfSeat: { n: "Wspięcia na palce siedząc", g: 1, note: "hantla na kolanie, pełny zakres", w: "16–24 kg",
+    how: ["Usiądź na krześle. Przednią część stóp postaw na grubej książce lub stopniu.", "Hantla poziomo na kolanach, pod nią złożony ręcznik.", "Unosisz pięty jak najwyżej, 1 s pauzy.", "Powoli w dół, pięty poniżej palców."],
+    cues: ["Golenie pionowo, kolana nad kostkami.", "Pełny zakres, bez skracania."],
+    bad: ["Bujanie się tułowiem."],
+    inj: "" },
+  floor: { n: "Wyciskanie hantli leżąc na podłodze", g: 2, note: "łokcie ok. 45°, krótka pauza, gdy ramię dotknie podłogi", w: "2× 14–18 kg",
+    how: ["Usiądź z hantlami na udach i połóż się, przenosząc je kolanami na klatkę.", "Kolana zgięte, stopy na podłodze. Hantle nad klatką, ręce proste.", "Opuszczasz w 2 s, łokcie ok. 45° od tułowia, aż tył ramienia dotknie podłogi.", "Krótka pauza bez odbijania, mięśnie dalej napięte.", "Wyciskasz w górę, hantle lekko zbliżają się nad mostkiem."],
+    cues: ["Łopatki ściągnięte i wciśnięte w podłogę.", "Nadgarstki proste, nad łokciami."],
+    bad: ["Łokcie na boki pod 90° (obciąża barki).", "Odbijanie łokci od podłogi."],
+    inj: "Odkładając, zegnij łokcie i opuść hantle na klatkę, potem usiądź." },
+  push: { n: "Pompki na uchwytach", g: 2, note: "progres: tempo 3 s w dół → nogi na krześle → plecak z ciężarem", w: "ciało",
+    how: ["Uchwyty pod barkami, na szerokość barków lub odrobinę szerzej.", "Ciało w jednej linii od głowy do pięt: spięty brzuch i pośladki.", "Opuszczasz się, aż klatka znajdzie się między uchwytami (głębiej niż zwykła pompka).", "Łokcie ok. 45° od tułowia.", "Wypychasz się do prostych rąk."],
+    cues: ["Patrzysz w podłogę przed dłońmi.", "Za trudne? Kolana na podłodze. Za łatwe? Wolniej w dół, potem nogi na krześle, potem plecak."],
+    bad: ["Biodra opadają w dół.", "Pupa w górze.", "Wysuwanie głowy do przodu."],
+    inj: "" },
+  ohp: { n: "Wyciskanie nad głowę siedząc", g: 2, note: "krzesło z oparciem, brzuch napięty", w: "2× 10–12 kg",
+    how: ["Usiądź na krześle z oparciem, stopy pewnie na podłodze.", "Hantle przy barkach, dłonie przodem albo lekko do siebie.", "Wyciskasz w górę do prostych rąk, hantle nad głową, lekko z przodu.", "Opuszczasz do wysokości brody lub uszu."],
+    cues: ["Żebra w dół, brzuch napięty.", "Głowa „przechodzi” pod hantlami, nie odchylasz się."],
+    bad: ["Odchylanie się do tyłu.", "Zbyt krótki ruch w dół."],
+    inj: "" },
+  lat: { n: "Wznosy bokiem", g: 2, note: "do wysokości barków, 2 s w dół", w: "4–6 kg",
+    how: ["Stań prosto, lekko pochylony w przód. Hantle przy udach, łokcie lekko ugięte.", "Unosisz ręce bokiem do wysokości barków, prowadząc łokciami.", "Krótka pauza i 2 s w dół."],
+    cues: ["Kciuk nie wyżej niż mały palec.", "Barki z dala od uszu."],
+    bad: ["Bujanie tułowiem: to znak, że ciężar za duży.", "Unoszenie powyżej barków z wzruszaniem ramion."],
+    inj: "" },
+  ohTri: { n: "Triceps nad głową stojąc", g: 2, note: "jedna hantla oburącz, brzuch napięty", w: "11–14 kg",
+    how: ["Jedna hantla pionowo, dłonie w romb pod górnym talerzem.", "Unosisz ją nad głowę na proste ręce.", "Zginając tylko łokcie, opuszczasz hantlę za głowę, aż poczujesz rozciąganie tricepsa.", "Prostujesz ręce do góry."],
+    cues: ["Łokcie wąsko, celują w przód/sufit.", "Kolana lekko ugięte, pośladki spięte, żebra w dół."],
+    bad: ["Łokcie rozjeżdżają się na boki."],
+    inj: "" },
+  skull: { n: "Wyciskanie francuskie na podłodze", g: 2, note: "hantle chwytem neutralnym, łokcie w miejscu", w: "2× 6–8 kg",
+    how: ["Leżysz na plecach, kolana zgięte. Hantle nad barkami, dłonie do siebie (kciuki w stronę głowy).", "Zginasz tylko łokcie, hantle schodzą obok głowy, do skroni.", "Prostujesz ręce do góry."],
+    cues: ["Ramiona nieruchomo, łokcie celują w sufit.", "Powoli w dół, 2–3 s."],
+    bad: ["Łokcie uciekają na boki.", "Ruch w barkach zamiast w łokciach."],
+    inj: "" },
+  row1: { n: "Wiosło jednorącz z podparciem", g: 3, note: "dłoń i kolano na krześle", w: "17–22 kg",
+    how: ["Lewa dłoń i lewe kolano na krześle lub kanapie, prawa stopa na podłodze.", "Tułów mniej więcej równolegle do podłogi.", "Hantla w prawej ręce zwisa swobodnie.", "Przyciągasz łokieć w stronę biodra. Krótka pauza.", "Powoli w dół, do pełnego wyprostu ręki. Potem druga strona."],
+    cues: ["Łokieć do biodra, nie do pachy.", "Barki równolegle do podłogi, bez obracania tułowia."],
+    bad: ["Szarpanie i skręcanie tułowia."],
+    inj: "" },
+  rowSup: { n: "Wiosło w podporze (Twoja wersja)", g: 3, note: "łokcie blisko ciała, ściągnij łopatki", w: "2× 14–17 kg",
+    how: ["Twoja wersja wiosła oburącz. Jeśli nie masz ławki skośnej: stań za krzesłem, pochyl tułów ok. 45° i oprzyj klatkę lub czoło o oparcie (z ręcznikiem).", "Hantle zwisają pod barkami, chwyt neutralny.", "Przyciągasz obie hantle w stronę bioder, łokcie blisko tułowia.", "Ściągasz łopatki, 1 s pauzy, powoli w dół."],
+    cues: ["Klatka cały czas oparta, nie odrywasz się.", "Ruch zaczynasz od łopatek."],
+    bad: ["Unoszenie tułowia przy każdym powtórzeniu.", "Szarpanie ciężaru."],
+    inj: "Podparcie tułowia trzyma stabilną pozycję. Jeśli robisz to po swojemu, trzymaj się tych samych wskazówek." },
+  pullover: { n: "Pullover leżąc na podłodze", g: 3, note: "jedna hantla oburącz; zamiennik drążka", w: "12–16 kg",
+    how: ["Leżysz na plecach, kolana zgięte. Jedna hantla trzymana oburącz za górny talerz, nad klatką.", "Łokcie lekko ugięte i zablokowane w tej pozycji.", "Opuszczasz hantlę łukiem za głowę, aż ramiona są przy uszach i czujesz rozciąganie pod pachami.", "Wracasz tym samym łukiem nad klatkę, myśląc o „ściąganiu łokciami w dół”."],
+    cues: ["Kąt w łokciach się nie zmienia (to nie triceps)."],
+    bad: ["Zginanie i prostowanie łokci."],
+    inj: "" },
+  rfly: { n: "Odwrotne rozpiętki", g: 3, note: "czoło oparte o oparcie krzesła", w: "4–6 kg",
+    how: ["Stań za krzesłem, pochyl tułów i oprzyj czoło o oparcie (podłóż ręcznik).", "Hantle zwisają pod barkami, łokcie lekko ugięte.", "Unosisz ręce na boki do linii barków, ściągając łopatki.", "Powoli w dół."],
+    cues: ["Lekki ciężar, liczy się tył barków, nie ilość kilogramów.", "Kciuki lekko w dół lub w przód."],
+    bad: ["Wzruszanie ramion.", "Zginanie łokci i robienie z tego wiosła."],
+    inj: "" },
+  bandRow: { n: "Wiosło gumą siedząc", g: 3, note: "guma zaczepiona o stopy", w: "guma średnia",
+    how: ["Usiądź na podłodze, nogi proste lub lekko zgięte. Guma owinięta o podeszwy stóp, końce w dłoniach.", "Siedzisz wysoko.", "Przyciągasz dłonie do brzucha, łokcie blisko ciała, łopatki razem. Pauza 1 s.", "Powoli oddajesz ruch, nie pozwalając gumie „wystrzelić”."],
+    cues: ["Za łatwo? Chwyć gumę krócej albo weź grubszą.", "Ciasne tyły ud? Zegnij kolana albo usiądź na poduszce."],
+    bad: ["Odchylanie się tułowiem do tyłu zamiast pracy ramion.", "Garbienie się."],
+    inj: "" },
+  curl: { n: "Uginanie z supinacją", g: 3, note: "bez bujania tułowiem", w: "12–14 kg",
+    how: ["Stań prosto, hantle wzdłuż ciała, dłonie do siebie.", "Uginasz rękę i w trakcie obracasz dłoń wnętrzem do góry.", "Na górze krótka pauza, potem 2–3 s w dół z powrotem do chwytu neutralnego.", "Obie ręce naraz lub naprzemiennie."],
+    cues: ["Łokcie przy tułowiu, nie wędrują do przodu."],
+    bad: ["Bujanie biodrami i rzucanie ciężaru."],
+    inj: "Superseria: zaraz po serii bicepsa robisz serię tricepsa, potem 60 s przerwy." },
+  hammer: { n: "Uginanie młotkowe", g: 3, note: "chwyt neutralny, pracuje też przedramię", w: "12–16 kg",
+    how: ["Stań prosto, hantle wzdłuż ciała, kciuki do przodu.", "Uginasz ręce, kciuki cały czas do góry (jak przy wbijaniu gwoździa młotkiem).", "Powoli w dół."],
+    cues: ["Łokcie przy tułowiu.", "Dużo daje przedramionom i chwytowi."],
+    bad: ["Bujanie tułowiem."],
+    inj: "" },
+  deadbug: { n: "Dead bug", g: 4, note: "powoli, na zmianę strony", w: "ciało",
+    how: ["Leżysz na plecach, ręce prosto w sufit, nogi w górze zgięte pod kątem 90° w biodrach i kolanach.", "Wydech.", "Powoli prostujesz prawą rękę za głowę i lewą nogę nad podłogą.", "Wracasz i to samo drugą parą."],
+    cues: ["Wydech przy prostowaniu, wdech przy powrocie.", "Za trudne? Ruszaj tylko nogami, ręce zostają w górze."],
+    bad: ["Pośpiech."],
+    inj: "" },
+  side: { n: "Deska bokiem", g: 4, note: "biodro w linii z barkiem", w: "ciało",
+    how: ["Leżysz na boku, łokieć dokładnie pod barkiem.", "Nogi proste, jedna na drugiej (łatwiej: kolana zgięte).", "Unosisz biodro, aż głowa, biodro i stopy tworzą linię.", "Trzymasz zadany czas, potem druga strona."],
+    cues: ["Biodro lekko do przodu, nie wypychasz pupy do tyłu.", "Spokojny oddech."],
+    bad: ["Opadanie biodra.", "Wstrzymywanie oddechu."],
+    inj: "" },
+  birddog: { n: "Bird dog", g: 4, note: "ręka w przód, przeciwna noga w tył, 2 s pauzy", w: "ciało",
+    how: ["Podpór na kolanach: dłonie pod barkami, kolana pod biodrami.", "Wyciągasz prawą rękę w przód i lewą nogę w tył do poziomu.", "2 s pauzy, wracasz, druga strona."],
+    cues: ["Biodra się nie obracają.", "Noga idzie w tył, nie w górę."],
+    bad: ["Unoszenie nogi wyżej niż biodro."],
+    inj: "" },
+  plank: { n: "Deska przodem", g: 4, note: "na przedramionach, ciało w linii", w: "ciało",
+    how: ["Przedramiona na podłodze, łokcie pod barkami.", "Nogi proste, oparte na palcach.", "Ciało w jednej linii od głowy do pięt, pośladki i brzuch spięte."],
+    cues: ["Lekko podwiń miednicę.", "Oddychaj normalnie."],
+    bad: ["Zapadnięte biodra.", "Pupa wysoko w górze."],
+    inj: "W EMOM B robisz ją po wiosłach gumą, do końca minuty." },
+  thruster: { n: "Thruster", g: 5, note: "przysiad + wyciśnięcie nad głowę jednym ruchem", w: "2× 6–8 kg",
+    how: ["Hantle przy barkach, łokcie lekko w przód. Stopy jak do przysiadu.", "Robisz przysiad do równoległej.", "Z dołu jednym płynnym ruchem wstajesz i wypychasz hantle nad głowę. Siła z nóg „podrzuca” ręce.", "Opuszczasz hantle do barków i od razu schodzisz w kolejny przysiad."],
+    cues: ["Wydech przy wypychaniu.", "Na górze hantle w linii z uszami."],
+    bad: ["Zatrzymywanie się na górze przysiadu, a potem osobne wyciskanie.", "Odchylanie się do tyłu przy rękach nad głową."],
+    inj: "" },
+  burpee: { n: "Burpee", g: 5, note: "przysiad → podpór → wstajesz (z wyskokiem od tyg. 3)", w: "ciało",
+    how: ["Ze stania robisz przysiad i kładziesz dłonie na podłodze.", "Wyrzucasz nogi do tyłu do podporu (pompka opcjonalnie).", "Przyciągasz nogi z powrotem pod siebie.", "Wstajesz. Od tyg. 3: wstajesz z wyskokiem i krótkim klaśnięciem nad głową."],
+    cues: ["Tyg. 1–2: nogi do tyłu i z powrotem krokiem, wstajesz bez wyskoku.", "Lądowanie cicho, na śródstopiu, kolana nad stopami."],
+    bad: ["W podporze biodra opadają w dół.", "Twarde lądowanie na piętach."],
+    inj: "" },
+  jlunge: { n: "Wykrok z przeskokiem", g: 5, note: "zmiana nóg w powietrzu, nisko do tyg. 5", w: "ciało",
+    how: ["Ustaw się w pozycji wykroku: jedna noga z przodu, druga z tyłu, oba kolana zgięte.", "Lekki wyskok w górę i w powietrzu zamieniasz nogi.", "Lądujesz miękko w wykroku z drugą nogą z przodu.", "8 powtórzeń = 4 na stronę."],
+    cues: ["Tyg. 1–2: zamiast skoku naprzemienne wykroki w tył krokiem.", "Tyg. 3–5: tylko niski przeskok, ledwie odrywasz stopy.", "Od tyg. 6: pełny przeskok."],
+    bad: ["Lądowanie na wyprostowanych nogach.", "Kolano przednie wpada do środka."],
+    inj: "" },
+  skater: { n: "Łyżwiarz", g: 5, note: "przeskok w bok z nogi na nogę", w: "ciało",
+    how: ["Stań na prawej nodze, lewa lekko za nią.", "Przeskakujesz w bok na lewą nogę, prawa zahacza za lewą.", "Lądujesz miękko na jednej nodze, z lekko zgiętym kolanem i tułowiem w przód.", "Od razu przeskok w drugą stronę. 20 = 10 na stronę."],
+    cues: ["Tyg. 1–2: zamiast skoku duży krok w bok.", "Ręce pracują jak u łyżwiarza."],
+    bad: ["Lądowanie na prostej nodze.", "Za szeroki skok w pierwszych tygodniach."],
+    inj: "" },
+  bandFast: { n: "Szybkie wiosło gumą (+ deska)", g: 5, note: "jak wiosło gumą, tylko w tempie", w: "guma średnia",
+    how: ["Ustawienie jak w zwykłym wiośle gumą siedząc: guma o stopy.", "12 mocnych, szybkich przyciągnięć do brzucha.", "W EMOM B: od razu odkładasz gumę i robisz deskę przodem do końca minuty.", "W tabacie: szybkie wiosła przez 20 s."],
+    cues: ["Tempo, ale ruch dalej kontrolowany.", "Przyciągasz łokcie do tyłu, łopatki razem."],
+    bad: ["Bujanie się tułowiem w przód i w tył."],
+    inj: "" },
+  climb: { n: "Mountain climbers (kontrolowane)", g: 5, note: "w podporze kolana na zmianę do klatki", w: "ciało",
+    how: ["Podpór na prostych rękach, dłonie pod barkami.", "Przyciągasz prawe kolano do klatki, odstawiasz, potem lewe.", "Tempo szybkie, ale kontrolowane, biodra nisko."],
+    cues: ["Tyg. 1–2: krokiem, bez podskakiwania.", "Brzuch spięty."],
+    bad: ["Biodra wysoko w górze.", "Biodra opadają."],
+    inj: "" },
+  knee: { n: "Wysokie kolano / skip A", g: 5, note: "marsz z wysokim kolanem, od tyg. 3 skip A", w: "ciało",
+    how: ["Tyg. 1–2: energiczny marsz w miejscu, kolana do wysokości bioder, ręce pracują.", "Od tyg. 3 skip A: w miejscu, krótkie podskoki na śródstopiu, na zmianę wysokie kolano.", "Tułów prosto, ręce jak w biegu."],
+    cues: ["Lądowanie na śródstopiu, cicho.", "Krótki kontakt z podłogą."],
+    bad: ["Lądowanie na piętach.", "Odchylanie się do tyłu."],
+    inj: "" },
+  gripper: { n: "Gripper", g: 6, note: "co drugi dzień, np. na spotkaniach", w: "—",
+    how: ["Co drugi dzień 4–5 serii po 10–15 ściśnięć na rękę.", "Na koniec 2× przytrzymanie zamkniętego grippera przez 20 s."],
+    cues: ["Pełne zamknięcie, kontrolowane otwieranie."], bad: [], inj: "" },
+  hold: { n: "Trzymanie hantli", g: 6, note: "na koniec 2 siłówek w tygodniu", w: "najcięższe hantle",
+    how: ["Stań prosto z najcięższymi hantlami w dłoniach, ręce wzdłuż ciała.", "Trzymasz 30–45 s, 3 serie."],
+    cues: ["Barki w dół i do tyłu, brzuch napięty.", "Możesz chodzić po mieszkaniu (spacer farmera)."],
+    bad: ["Garbienie się."], inj: "" }
+};
+
+const SS_BI = "superseria: biceps → od razu triceps → 60 s przerwy";
+const SS_TRI = "druga część superserii z bicepsem";
+const CORE = "spokojny oddech, bez wstrzymywania powietrza";
+const RUN_EASY = "Spokojny bieg albo marsz z truchtem, tempo ok. 6:45–7:30 /km (da się mówić pełnymi zdaniami).";
+
+const emom = (tasks, n = 8) => Array.from({ length: n }, (_, i) => [`${i}:00`, tasks[i % tasks.length]]);
+const EMOM_A = emom([["10 thrusterów (2× 6–8 kg)", "thruster"], ["6–8 burpees (od tyg. 3 z wyskokiem)", "burpee"]]);
+const EMOM_B = emom([["8 wykroków z przeskokiem (4 /str)", "jlunge"], ["12 szybkich wioseł gumą + deska do końca minuty", "bandFast"]]);
+const EMOM_C = emom([["8 burpees (od tyg. 3 z wyskokiem)", "burpee"], ["10 przysiadów goblet", "goblet"], ["10 pompek na uchwytach", "push"], ["20 łyżwiarzy (10 /str)", "skater"]]);
+const TABATA_BLOCKS = [
+  ["A", ["Burpees (od tyg. 3 z wyskokiem)", "burpee"], ["Szybki przysiad goblet (8–10 kg)", "goblet"]],
+  ["B", ["Mountain climbers, kontrolowane", "climb"], ["Szybkie wiosło gumą", "bandFast"]],
+  ["C", ["Thruster (2× 6 kg)", "thruster"], ["Łyżwiarz (od tyg. 3 z przeskokiem)", "skater"]],
+  ["D", ["Pompki na uchwytach", "push"], ["Wysokie kolano: marsz, od tyg. 3 skip A", "knee"]]
+];
+
+const S = (code, title, min, items, fin, plan, emomName) => ({ code, title, min, type: "s", items, fin, emom: plan, emomName });
+const C = (code, title, min, body, extra) => ({ code, title, min, type: "c", body, extra });
+
+const tabataTable = `<div class="tbl"><table><thead><tr><th>Blok</th><th>Ćwiczenie 1</th><th>Ćwiczenie 2</th></tr></thead><tbody>
+  ${TABATA_BLOCKS.map(([b, x, y]) => `<tr><td class="sr">${b}</td><td>${exLink(x[1], x[0])}</td><td>${exLink(y[1], y[0])}</td></tr>`).join("")}</tbody></table></div>`;
+
+const SESSIONS = [
+  S("A", "FBW A + EMOM", "60 min", [["goblet","3×8–12"],["push","3×12–20"],["row1","3×8–12 /str"],["bridge1","3×10–15 /str"],["lat","2×12–15"],["calf1","3×12–20 /str"],["curl","3×10–12", SS_BI],["skull","3×10–12", SS_TRI],["deadbug","2×8 /str", CORE]],
+    "<b>EMOM 8 min:</b> co minutę start, reszta minuty to odpoczynek. Minuty nieparzyste: 10 thrusterów (2× 6–8 kg). Parzyste: 6–8 burpees z wyskokiem.<br><span class='muted'>Tyg. 1–2: burpees bez wyskoku · od tyg. 3: z wyskokiem.</span>", EMOM_A, "EMOM A"),
+  C("T", "Tabata", "20–25 min", ["8 rund po 20 s pracy i 10 s przerwy = 4 min na blok, 1–2 min przerwy między blokami. Ćwiczenia w bloku na zmianę.", "Tyg. 1–2: 2 bloki (A, B) · tyg. 3–10: 3 bloki (np. A, B, C, następnym razem B, C, D). Więcej nie trzeba, bo EMOM-y już dają dużo intensywności.", "Pod koniec rundy masz nie móc mówić. Na koniec 3–5 min spokojnego marszu."], tabataTable),
+  S("B", "FBW B + EMOM", "60 min", [["bulg","3×8–12 /str"],["floor","3×8–12"],["rowSup","3×10–12"],["pullover","3×10–12"],["hammer","3×10–12", SS_BI],["ohTri","3×10–12", SS_TRI],["side","2×20–30 s /str", CORE]],
+    "<b>EMOM 8 min:</b> minuty nieparzyste: 8 wykroków z przeskokiem (4 /str). Parzyste: 12 szybkich wioseł gumą + deska do końca minuty.<br><span class='muted'>Tyg. 1–2: wykroki naprzemienne krokiem · tyg. 3–5: niski przeskok · od tyg. 6: pełny przeskok.</span>", EMOM_B, "EMOM B"),
+  C("R", "Bieg", "25–40 min", [RUN_EASY,
+    "<b>Tyg. 1–3:</b> 25 min: 4 min biegu / 1 min marszu, tempo 7:00–7:30.",
+    "<b>Tyg. 4–6:</b> 30 min ciągłego truchtu.",
+    "<b>Tyg. 7–10:</b> 35–40 min + na końcu 4 przebieżki po 15 s (szybko, ale bez sprintu).",
+    "<b>Przeciw nudzie, co drugi tydzień: bieg interwałowy.</b> 5 min truchtu → 6–8 × (1 min szybciej, ok. 5:30–5:45 /km / 2 min marszu lub truchtu) → 5 min truchtu. Bez sprintów na maksa.",
+    "Gdy leje: 30–40 min szybkiego marszu albo druga tabata."]),
+  S("C", "FBW C + EMOM", "60 min", [["lunge","3×10 /str"],["thrust","3×10–15"],["ohp","3×8–12"],["bandRow","3×12–15"],["rfly","2×12–15"],["calfSeat","3×15–20"],["curl","3×10–12", SS_BI],["ohTri","3×10–12", SS_TRI],["birddog","2×8 /str", CORE]],
+    "<b>EMOM 8 min, 4 stacje × 2 rundy:</b> min. 1: 8 burpees z wyskokiem · min. 2: 10 przysiadów goblet · min. 3: 10 pompek · min. 4: 20 łyżwiarzy z przeskokiem (10 /str).<br><span class='muted'>Tyg. 1–2: wszystko bez wyskoku, łyżwiarz krokiem w bok.</span>", EMOM_C, "EMOM C")
+];
+
+function exLink(k, label) { return `<button type="button" class="exl" data-ex="${k}">${label || EX[k].n}</button>`; }
+
+function kcal(s) {
+  if (s.type === "s") return "~350–450 kcal";
+  return s.code === "R" ? "~300–380 kcal" : "~180–260 kcal";
+}
+function exRow([k, sr, note]) {
+  const e = EX[k];
+  return `<tr><td>${exLink(k)}<small>${note || e.note}</small></td><td class="sr">${sr}</td><td class="st">${e.w}</td></tr>`;
+}
+function emomTable(rows) {
+  return `<div class="tbl"><table><thead><tr><th>Start</th><th>Zadanie (reszta minuty = przerwa)</th></tr></thead><tbody>${rows.map(([t, [x, k]]) => `<tr><td class="sr">${t}</td><td>${exLink(k, x)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function sessionHTML(s) {
+  if (s.type === "c") {
+    return `<article class="session c" id="s-${s.code}"><div class="shead"><h3>${s.code} · ${s.title}</h3><span class="tag">kondycja · ${s.min} · ${kcal(s)}</span></div>
+      <div class="sbody"><ul>${s.body.map(b => `<li>${b}</li>`).join("")}</ul>${s.extra || ""}</div></article>`;
+  }
+  return `<article class="session" id="s-${s.code}"><div class="shead"><h3>${s.code} · ${s.title}</h3><span class="tag">siła · ${s.min} · przerwy 60–90 s · ${kcal(s)}</span></div>
+    <div class="tbl"><table><thead><tr><th>Ćwiczenie</th><th>Serie</th><th>Start</th></tr></thead><tbody>${s.items.map(exRow).join("")}</tbody></table></div>
+    <div class="fin">${s.fin}${emomTable(s.emom)}</div></article>`;
+}
+
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+
+function trackerHTML() {
+  let rows = "";
+  for (let w = 1; w <= 10; w++) {
+    const cells = SESSIONS.map((s, i) => {
+      const key = `plan-v6-w${w}-s${i}`;
+      return `<td><input type="checkbox" data-key="${key}" ${store(key) === "1" ? "checked" : ""} aria-label="Tydzień ${w}, sesja ${s.code}"></td>`;
+    }).join("");
+    rows += `<tr class="${w === 7 ? "deload" : ""}"><td>Tydz. ${w}${w === 7 ? " · lżej" : ""}</td>${cells}</tr>`;
+  }
+  return `<div class="box"><div class="tmeta"><h3>Odhaczanie: 10 tygodni</h3><span class="progress" id="prog"></span></div>
+    <div class="tracker"><table><thead><tr><th></th>${SESSIONS.map(s => `<th>${s.code}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
+    <span class="muted small">Kolejność sesji trzymaj, dni tygodnia są dowolne. Tydzień 7 robisz lżej (połowa serii, EMOM 6 min).</span>
+    <span class="confirm" id="reset"><button type="button" data-reset>Wyczyść odhaczenia</button></span></div>`;
+}
+function updateProgress() {
+  const all = document.querySelectorAll("input[data-key]");
+  document.getElementById("prog").textContent = `${[...all].filter(x => x.checked).length} / ${all.length} sesji`;
+}
+
+function planHTML() {
+  return `<section class="panel" id="p-plan">
+    <div class="facts">
+      <div class="fact"><b>3 + 2</b><span>FBW z EMOM + kondycja</span></div>
+      <div class="fact"><b>~60 min</b><span>FBW z finiszerem</span></div>
+      <div class="fact"><b>8 min</b><span>EMOM na koniec</span></div>
+      <div class="fact"><b>Skoki</b><span>stopniowo od tyg. 3</span></div>
+    </div>
+    <div class="jump" aria-label="Skocz do sesji">${SESSIONS.map(s => `<button type="button" class="${s.type === "c" ? "c" : ""}" data-jump="s-${s.code}"><b>${s.code}</b>${s.title}</button>`).join("")}</div>
+    <p class="muted small">Stuknij nazwę ćwiczenia z <b>?</b>, żeby zobaczyć, jak je zrobić. Zasada skoków: lądujesz cicho, na śródstopiu, z kolanami nad stopami.</p>
+
+    <div class="box w"><h3>Przed każdą siłówką: 5 min rozgrzewki</h3><p>2 min marszu w miejscu i krążeń ramion → 10 przysiadów bez ciężaru → 10 pompek na kolanach → 15× rozciąganie gumy przed sobą → 15 wspięć na palce obunóż → 1 lekka seria pierwszego ćwiczenia.</p></div>
+
+    ${SESSIONS.map(sessionHTML).join("")}
+
+    <div class="box"><h3>Jak działa EMOM</h3>
+    <p><b>EMOM</b> (Every Minute On the Minute) to „co minutę start”. Stoper na 8 minut. Na początku każdej minuty robisz zadane powtórzenia, a czas do pełnej minuty to przerwa. Gdy wybije kolejna minuta, startujesz z następnym zadaniem.</p>
+    <ul>
+      <li><b>Przygotowanie:</b> po siłówce 2–3 min przerwy. Ustaw obok hantle i gumę, odpal apkę z sygnałem co 60 s (np. „Interval Timer”).</li>
+      <li><b>Dobór powtórzeń:</b> praca ok. 25–40 s, przerwa min. 15 s. Nie zdążasz → −2 powtórzenia. Kończysz w &lt;20 s → +2.</li>
+      <li><b>Progresja:</b> tyg. 1–2 dolna granica. Potem co tydzień +1 powtórzenie na stację, aż przerwa spadnie do ok. 15 s. Tyg. 9–10: EMOM 10 min.</li>
+      <li><b>Tydzień 7 (lżejszy):</b> EMOM 6 min, dolna granica powtórzeń.</li>
+    </ul>
+    <p class="muted small">Przykład FBW A: 0:00 10 thrusterów (~30 s pracy, ~30 s przerwy) → 1:00 7 burpees (~25 s / ~35 s) → i tak na zmianę do 7:59. Pod koniec praca się wydłuża, a przerwa skraca, to normalne.</p></div>
+
+    <div class="box"><h3>Ile to spala (szacunek)</h3>
+    <div class="tbl"><table><thead><tr><th>Sesja</th><th>Czas</th><th>kcal</th></tr></thead><tbody>
+      <tr><td>FBW A / B / C z EMOM</td><td class="sr">~60 min</td><td class="sr">350–450</td></tr>
+      <tr><td>Tabata (3 bloki + marsz)</td><td class="sr">~25 min</td><td class="sr">180–260</td></tr>
+      <tr><td>Spokojny bieg ~4,3 km</td><td class="sr">30 min</td><td class="sr">300–380</td></tr>
+      <tr><td><b>Cały tydzień</b></td><td class="sr">5 sesji</td><td class="sr"><b>1600–2000</b></td></tr>
+    </tbody></table></div>
+    <p class="muted small">Błąd ±25%. Te kalorie są już wliczone w ~2350 kcal z zakładki „Dieta”, więc nie dojadaj ich osobno.</p></div>
+
+    ${trackerHTML()}
+  </section>`;
+}
+
+function usesOf() {
+  const u = {};
+  const add = (k, label, c) => { (u[k] = u[k] || []); if (!u[k].some(x => x[0] === label)) u[k].push([label, c]); };
+  SESSIONS.forEach(s => {
+    if (s.items) s.items.forEach(([k]) => add(k, "FBW " + s.code));
+    if (s.emom) s.emom.forEach(([, [, k]]) => add(k, s.emomName, true));
+  });
+  TABATA_BLOCKS.forEach(([b, x, y]) => { add(x[1], "Tabata " + b, true); add(y[1], "Tabata " + b, true); });
+  add("plank", "EMOM B", true);
+  add("gripper", "dodatek"); add("hold", "dodatek");
+  return u;
+}
+
+function exHTML() {
+  const uses = usesOf();
+  const card = k => {
+    const e = EX[k];
+    const tags = (uses[k] || []).map(([l, c]) => `<span class="${c ? "c" : ""}">${l}</span>`).join("");
+    return `<details class="ex" id="ex-${k}" data-search="${(e.n + " " + e.note).toLowerCase()}">
+      <summary><span class="sname"><b>${e.n}</b><span class="uses">${tags}</span></span></summary>
+      <div class="exbody">
+        <span class="meta">Start: ${e.w} · ${e.note}</span>
+        <div><h4>Jak zrobić</h4><ol>${e.how.map(x => `<li>${x}</li>`).join("")}</ol></div>
+        ${e.cues.length ? `<div><h4>Pilnuj</h4><ul>${e.cues.map(x => `<li>${x}</li>`).join("")}</ul></div>` : ""}
+        ${e.bad.length ? `<div><h4 class="bad">Typowe błędy</h4><ul>${e.bad.map(x => `<li>${x}</li>`).join("")}</ul></div>` : ""}
+        ${e.inj ? `<p class="inj"><b>Uwaga:</b> ${e.inj}</p>` : ""}
+      </div></details>`;
+  };
+  return `<section class="panel" id="p-ex" hidden>
+    <div class="vhead"><span class="eyebrow">Atlas ćwiczeń</span><h2>Jak robić ćwiczenia</h2>
+    <p class="muted">Stuknij ćwiczenie, żeby rozwinąć. Kolorowe etykiety mówią, w której sesji występuje.</p></div>
+    <input type="search" class="search" id="q" placeholder="Szukaj, np. wiosło, burpee…" aria-label="Szukaj ćwiczenia" autocomplete="off">
+    ${GROUPS.map((g, gi) => `<div class="exgroup"><h3>${g}</h3>${Object.keys(EX).filter(k => EX[k].g === gi).map(card).join("")}</div>`).join("")}
+  </section>`;
+}
+
+function rulesHTML() {
+  return `<section class="panel" id="p-rules" hidden>
+    <div class="vhead"><span class="eyebrow">Zasady</span><h2>Progresja i żonglowanie</h2></div>
+    <div class="box"><h3>Progresja: 10 tygodni</h3><div class="tbl"><table><thead><tr><th>Tyg.</th><th>Zapas</th><th>Co robisz</th></tr></thead><tbody>
+      <tr><td class="sr">1–2</td><td>3 powt.</td><td>Nauka ruchów, ciężar raczej za lekki niż za ciężki. Zapisuj ciężary.</td></tr>
+      <tr><td class="sr">3–6</td><td>2 → 1</td><td>Podwójna progresja: gdy we wszystkich seriach dojdziesz do górnej granicy (np. 3×12), dokładasz ciężar i wracasz do dołu zakresu (3×8).</td></tr>
+      <tr><td class="sr">7</td><td>lekko</td><td>Odciążenie: połowa serii, ten sam ciężar. Tabata 2 bloki, EMOM 6 min.</td></tr>
+      <tr><td class="sr">8–10</td><td>1 powt.</td><td>Dalsza progresja. EMOM 10 min. Po 10. tygodniu: pomiary i nowy blok.</td></tr>
+    </tbody></table></div>
+    <p class="muted small">„Zapas” = ile powtórzeń mógłbyś jeszcze zrobić na końcu serii. Gdy hantle się skończą (24 kg): wolniejsze opuszczanie (3–4 s), pauza 2 s w najtrudniejszym miejscu, „półtora powtórzenia”, dodatkowa seria albo wersja na jedną nogę lub rękę.</p></div>
+
+    <div class="box"><h3>Żonglowanie sesjami</h3><ul>
+      <li>Kolejność A → T → B → R → C trzymasz, dni są dowolne, weekend nie jest obowiązkowy.</li>
+      <li>Najwyżej 3 dni treningowe z rzędu, potem dzień wolny.</li>
+      <li>Wypadła sesja? Robisz następną w kolejce, bez nadrabiania dwóch naraz.</li>
+      <li>Nie rób tabaty dzień przed FBW, jeśli możesz tego uniknąć.</li>
+      <li>Gdy w EMOM-ie nie zostaje Ci min. 15 s przerwy, zmniejsz liczbę powtórzeń.</li>
+    </ul></div>
+
+    <div class="box"><h3>Skoki</h3><ul>
+      <li>Skoki wchodzą stopniowo: tyg. 1–2 bez skoków, tyg. 3–5 niskie skoki i przeskoki, od tyg. 6 pełne. Lądujesz cicho, na śródstopiu.</li>
+      <li>Wyskoki na maksa w górę i skoki na skrzynię zostawiamy na później.</li>
+      <li>Wspięcia na łydki 2×/tydz. Opuszczanie zawsze powoli, 3 s.</li>
+    </ul></div>
+
+    <div class="box"><h3>Przedramiona i chwyt (dodatek)</h3><ul>
+      <li>${exLink("gripper", "Gripper")} na spotkaniach i przy nauce: co drugi dzień 4–5 serii po 10–15 ściśnięć na rękę + 2× przytrzymanie 20 s.</li>
+      <li>Na końcu 2 siłówek w tygodniu: ${exLink("hold", "trzymanie hantli")} 3 × 30–45 s.</li>
+      <li>Uginanie młotkowe z FBW B też dużo daje przedramionom.</li>
+    </ul></div>
+    <div class="box"><h3>Pomiary</h3><ul>
+      <li>Waga 3× w tygodniu rano, liczy się średnia.</li>
+      <li>Obwód w pasie raz w tygodniu, na wysokości pępka.</li>
+      <li>Zdjęcie co 4 tygodnie, to samo światło i miejsce.</li>
+      <li>Notatnik albo telefon: ciężar × powtórzenia każdej serii.</li>
+    </ul></div>
+  </section>`;
+}
+
+function dietHTML() {
+  return `<section class="panel" id="p-diet" hidden>
+    <div class="vhead"><span class="eyebrow">Ściąga: jedzenie</span><h2>Dieta na redukcję</h2>
+    <p class="muted">Łagodny deficyt: mięśnie mogą rosnąć, a brzuch powoli spadać. Wartości są punktem startu. Konkretne produkty dopasuj do siebie, najlepiej z dietetykiem.</p></div>
+    <div class="facts">
+      <div class="fact"><b>~2350 kcal</b><span>start (zapotrzebowanie ok. 2650–2700)</span></div>
+      <div class="fact"><b>~150 g białka</b><span>4 posiłki po 35–40 g</span></div>
+      <div class="fact"><b>~70 g tłuszczu</b><span>reszta z węglowodanów (~270 g)</span></div>
+      <div class="fact"><b>7–9 tys. kroków</b><span>codziennie, robi dużą różnicę</span></div>
+    </div>
+    <div class="box"><h3>Przykładowy dzień (ok. 150 g białka)</h3><div class="tbl"><table><thead><tr><th>Posiłek</th><th>Co</th><th>Białko</th></tr></thead><tbody>
+      <tr><td>Śniadanie</td><td>Owsianka na mleku + banan + porcja odżywki</td><td class="sr">~40 g</td></tr>
+      <tr><td>Obiad</td><td>Ryż + 200 g kurczaka lub indyka + gotowana marchew i cukinia</td><td class="sr">~50 g</td></tr>
+      <tr><td>Po treningu</td><td>Skyr albo serek wiejski + biszkopty lub wafle ryżowe</td><td class="sr">~25 g</td></tr>
+      <tr><td>Kolacja</td><td>Jajecznica z 3 jajek + 2 kromki pszennego + plaster sera</td><td class="sr">~30 g</td></tr>
+    </tbody></table></div><p class="muted small">To przykład do podmiany na produkty, które Ci służą.</p></div>
+    <div class="box"><h3>Korekta po 2 tygodniach</h3><ul>
+      <li>Średnia waga spada o 0,3–0,6 kg/tydz. → zostaw tak, jak jest.</li>
+      <li>Nie spada → odejmij ok. 150 kcal.</li>
+      <li>Spada szybciej niż 0,8 kg/tydz. → dodaj ok. 150 kcal, bo tracisz mięśnie.</li>
+      <li>Obwód w pasie jest ważniejszy niż sama waga.</li>
+    </ul></div>
+    <div class="box"><h3>Sen i regeneracja</h3><p>7+ godzin snu to warunek, żeby mięśnie rosły przy deficycie. Przy nauce i pracy zakwasy i ciągłe zmęczenie są sygnałem, żeby zrobić tydzień lżej (jak tydzień 7).</p></div>
+  </section>`;
+}
+
+const ORDER = ["plan", "ex", "rules", "diet"];
+const LABELS = { plan: "Plan", ex: "Ćwiczenia", rules: "Zasady", diet: "Dieta" };
+const main = document.getElementById("main");
+const tabs = document.getElementById("tabs");
+const backBtn = document.getElementById("back");
+let backY = null, backTab = "plan";
+
+tabs.innerHTML = ORDER.map(id => `<button type="button" role="tab" id="t-${id}" data-go="${id}" aria-selected="false">${LABELS[id]}</button>`).join("");
+main.innerHTML = planHTML() + exHTML() + rulesHTML() + dietHTML();
+updateProgress();
+
+function show(id) {
+  if (!ORDER.includes(id)) id = "plan";
+  ORDER.forEach(x => { document.getElementById("p-" + x).hidden = x !== id; });
+  tabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.go === id ? "true" : "false"));
+  store("fbw-tab", id);
+}
+function scrollToEl(el) {
+  const y = el.getBoundingClientRect().top + window.scrollY - document.querySelector("nav.tabs").offsetHeight - 8;
+  window.scrollTo({ top: Math.max(0, y) });
+}
+function openEx(k) {
+  backY = window.scrollY;
+  backTab = ORDER.find(x => !document.getElementById("p-" + x).hidden) || "plan";
+  show("ex");
+  const el = document.getElementById("ex-" + k);
+  if (!el) return;
+  document.getElementById("q").value = ""; filterEx("");
+  el.open = true;
+  scrollToEl(el);
+  el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200);
+  backBtn.textContent = backTab === "plan" ? "← Wróć do treningu" : "← Wróć";
+  backBtn.hidden = false;
+}
+function filterEx(q) {
+  q = q.trim().toLowerCase();
+  document.querySelectorAll(".exgroup").forEach(g => {
+    let any = false;
+    g.querySelectorAll("details.ex").forEach(d => { const hit = !q || d.dataset.search.includes(q); d.hidden = !hit; any = any || hit; });
+    g.hidden = !any;
+  });
+}
+
+document.addEventListener("click", e => {
+  const ex = e.target.closest("[data-ex]");
+  if (ex) { e.preventDefault(); openEx(ex.dataset.ex); return; }
+  const go = e.target.closest("[data-go]");
+  if (go) { show(go.dataset.go); backBtn.hidden = true; window.scrollTo({ top: 0 }); return; }
+  const j = e.target.closest("[data-jump]");
+  if (j) { scrollToEl(document.getElementById(j.dataset.jump)); return; }
+  if (e.target.closest("#back")) {
+    const fromPlan = backY;
+    show(backTab); backBtn.hidden = true;
+    if (fromPlan !== null) window.scrollTo({ top: fromPlan });
+    return;
+  }
+  if (e.target.closest("[data-reset]")) {
+    document.getElementById("reset").innerHTML = `Na pewno wyczyścić? <button type="button" class="yes" data-reset-yes>Tak, wyczyść</button><button type="button" data-reset-no>Anuluj</button>`;
+    return;
+  }
+  if (e.target.closest("[data-reset-yes]")) {
+    document.querySelectorAll("input[data-key]").forEach(x => { x.checked = false; store(x.dataset.key, null); });
+    updateProgress();
+  }
+  if (e.target.closest("[data-reset-yes], [data-reset-no]")) {
+    document.getElementById("reset").innerHTML = `<button type="button" data-reset>Wyczyść odhaczenia</button>`;
+  }
+});
+document.addEventListener("change", e => {
+  const k = e.target.dataset && e.target.dataset.key;
+  if (!k) return;
+  store(k, e.target.checked ? "1" : null);
+  updateProgress();
+});
+document.getElementById("q").addEventListener("input", e => filterEx(e.target.value));
+
+const hash = (location.hash || "").replace("#", "");
+show(ORDER.includes(hash) ? hash : (store("fbw-tab") || "plan"));
+
+// Wersja z GitHub Pages: service worker trzyma stronę w telefonie, żeby działała offline.
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
